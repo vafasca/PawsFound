@@ -1,0 +1,285 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/plusjakartasans/v8/LDIbaomQNQcsL8847AXSg7kMvCLRCwW8vQq2gWfbAnLs.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/bevietnampro/v11/QdVPSEPjZXcu6-Wq-FZafjN8qgKrscqYyIgMOFye.woff2') format('woff2');
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* PawsFound custom colors */
+  --color-paw-bg: #fff8f5;
+  --color-paw-surface: #ffeadd;
+  --color-paw-surface-high: #f9e4d7;
+  --color-paw-surface-highest: #f3dfd1;
+  --color-paw-surface-dim: #ead6c9;
+  --color-paw-surface-low: #fff1e9;
+  --color-paw-surface-variant: #f3dfd1;
+  --color-paw-on-surface: #241912;
+  --color-paw-on-surface-variant: #564334;
+  --color-paw-outline: #897362;
+  --color-paw-outline-variant: #ddc1ae;
+  --color-paw-primary: #904d00;
+  --color-paw-on-primary: #ffffff;
+  --color-paw-primary-container: #ff8c00;
+  --color-paw-primary-fixed: #ffdcc3;
+  --color-paw-primary-fixed-dim: #ffb77d;
+  --color-paw-on-primary-container: #623200;
+  --color-paw-on-primary-fixed: #2f1500;
+  --color-paw-secondary: #0060ac;
+  --color-paw-on-secondary: #ffffff;
+  --color-paw-secondary-container: #68abff;
+  --color-paw-secondary-fixed: #d4e3ff;
+  --color-paw-on-secondary-container: #003e73;
+  --color-paw-tertiary: #006d37;
+  --color-paw-on-tertiary: #ffffff;
+  --color-paw-tertiary-container: #1bc268;
+  --color-paw-tertiary-fixed: #6bfe9c;
+  --color-paw-on-tertiary-container: #004922;
+  --color-paw-error: #ba1a1a;
+  --color-paw-on-error: #ffffff;
+  --color-paw-error-container: #ffdad6;
+  --color-paw-on-error-container: #93000a;
+  --color-paw-inverse-surface: #3a2e25;
+  --color-paw-inverse-on-surface: #ffede3;
+  --color-paw-inverse-primary: #ffb77d;
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: #fff8f5;
+  --foreground: #241912;
+  --card: #ffffff;
+  --card-foreground: #241912;
+  --popover: #ffffff;
+  --popover-foreground: #241912;
+  --primary: #904d00;
+  --primary-foreground: #ffffff;
+  --secondary: #0060ac;
+  --secondary-foreground: #ffffff;
+  --muted: #f3dfd1;
+  --muted-foreground: #564334;
+  --accent: #ffeadd;
+  --accent-foreground: #623200;
+  --destructive: #ba1a1a;
+  --border: #ddc1ae;
+  --input: #ddc1ae;
+  --ring: #904d00;
+}
+
+.dark {
+  --background: #1a1210;
+  --foreground: #ffede3;
+  --card: #2a1e16;
+  --card-foreground: #ffede3;
+  --popover: #2a1e16;
+  --popover-foreground: #ffede3;
+  --primary: #ffb77d;
+  --primary-foreground: #2f1500;
+  --secondary: #68abff;
+  --secondary-foreground: #001c39;
+  --muted: #3a2e25;
+  --muted-foreground: #bba998;
+  --accent: #3a2e25;
+  --accent-foreground: #ffede3;
+  --destructive: #ffb4ab;
+  --border: #564334;
+  --input: #564334;
+  --ring: #ffb77d;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-paw-bg text-paw-on-surface;
+    font-family: 'Be Vietnam Pro', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6, .font-headline {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ddc1ae;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #897362;
+}
+
+/* Leaflet map overrides */
+.leaflet-container {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  z-index: 1;
+}
+
+/* Custom Leaflet popup */
+.custom-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  padding: 0;
+  overflow: hidden;
+}
+.custom-popup .leaflet-popup-content {
+  margin: 0;
+  line-height: 1.4;
+}
+.custom-popup .leaflet-popup-tip {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* Animations */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
+/* PWA safe area */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* The Empathetic Guardian Design System */
+
+/* Glassmorphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-dark {
+  background: rgba(36, 25, 18, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Ambient shadow for floating elements */
+.shadow-ambient {
+  box-shadow: 0 8px 32px rgba(36, 25, 18, 0.06);
+}
+
+.shadow-ambient-lg {
+  box-shadow: 0 8px 32px rgba(36, 25, 18, 0.10);
+}
+
+/* Ghost border */
+.ghost-border {
+  border: 2px solid rgba(144, 77, 0, 0.15);
+}
+
+.ghost-border-focus:focus-within {
+  border-color: rgba(144, 77, 0, 0.25);
+  box-shadow: 0 0 0 3px rgba(144, 77, 0, 0.08);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #904d00, #ff8c00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Status ribbon (floating glassmorphic pill) */
+.status-ribbon {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Community pulse animation */
+@keyframes community-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
+.community-pulse {
+  animation: community-pulse 2s ease-in-out infinite;
+}
+
+/* Smooth transitions */
+.transition-glass {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* No-scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Auth modal entrance animation */
+@keyframes modal-entrance {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-modal-entrance {
+  animation: modal-entrance 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle paw pattern for decorative backgrounds */
+.paw-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cellipse cx='20' cy='22' rx='6' ry='7' fill='%23904d00' opacity='0.03'/%3E%3Ccircle cx='14' cy='13' r='3' fill='%23904d00' opacity='0.03'/%3E%3Ccircle cx='26' cy='13' r='3' fill='%23904d00' opacity='0.03'/%3E%3Ccircle cx='11' cy='19' r='2.5' fill='%23904d00' opacity='0.03'/%3E%3Ccircle cx='29' cy='19' r='2.5' fill='%23904d00' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}

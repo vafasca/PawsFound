@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // For migrations (Supabase direct connection)
+}
+
+model User {
+  id              String          @id @default(cuid())
+  name            String
+  email           String          @unique
+  avatar          String?
+  phone           String?
+  city            String?
+  role            String          @default("USER") // "ADMIN" | "SHELTER" | "USER"
+  password        String
+  bio             String?
+  locale          String          @default("es") // language preference
+  pushEnabled     Boolean         @default(true)
+  locationSharing Boolean         @default(false)
+  profileVisible  Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  pets             Pet[]
+  reports          Report[]
+  sightings        Sighting[]
+  comments         Comment[]
+  sentMessages     ChatMessage[]  @relation("SentMessages")
+  chatRooms        ChatRoomUser[]
+  userBadges       UserBadge[]
+  notifications    Notification[]
+}
+
+model Pet {
+  id          String   @id @default(cuid())
+  name        String
+  species     String   // "dog" | "cat" | "other"
+  breed       String?
+  color       String?
+  uniqueMarks String?
+  photoUrl    String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  type        String   // "lost" | "sighted"
+  petName     String
+  species     String   // "dog" | "cat" | "other"
+  breed       String?
+  color       String?
+  uniqueMarks String?
+  photoUrl    String?
+  lat         Float?
+  lng         Float?
+  address     String?
+  status      String   @default("active") // "active" | "found" | "closed"
+  reporterId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reporter  User      @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  sightings Sighting[]
+  comments  Comment[]
+}
+
+model Sighting {
+  id          String   @id @default(cuid())
+  reportId    String
+  photoUrl    String?
+  description String?
+  lat         Float?
+  lng         Float?
+  address     String?
+  reporterId  String
+  createdAt   DateTime @default(now())
+
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reporter User   @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  comments Comment[]
+}
+
+model Comment {
+  id         String    @id @default(cuid())
+  content    String
+  authorId   String
+  reportId   String?
+  sightingId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  report   Report?   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  sighting Sighting? @relation(fields: [sightingId], references: [id], onDelete: Cascade)
+}
+
+model ChatRoom {
+  id        String   @id @default(cuid())
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ChatRoomUser[]
+  messages     ChatMessage[]
+}
+
+model ChatRoomUser {
+  id       String   @id @default(cuid())
+  roomId   String
+  userId   String
+  lastRead DateTime?
+  joinedAt DateTime @default(now())
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  content   String
+  roomId    String
+  senderId  String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  icon        String   // emoji or icon name
+  category    String   // "community" | "rescue" | "social" | "special"
+  createdAt   DateTime @default(now())
+
+  users UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String   // "report" | "sighting" | "comment" | "chat" | "badge" | "system"
+  read      Boolean  @default(false)
+  data      String?  // JSON string for extra data
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

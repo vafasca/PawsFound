@@ -1,0 +1,45 @@
+{
+  "name": "PawsFound",
+  "short_name": "PawsFound",
+  "description": "Red comunitaria para encontrar mascotas perdidas. Reporta, avista y ayuda a encontrar amigos peludos.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fff8f5",
+  "theme_color": "#904d00",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["social", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Reportar Mascota",
+      "short_name": "Reportar",
+      "description": "Publicar un reporte de mascota perdida o avistada",
+      "url": "/?tab=report",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ver Mapa",
+      "short_name": "Mapa",
+      "description": "Ver mascotas reportadas en el mapa",
+      "url": "/?tab=map",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

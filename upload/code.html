@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PawsFound - Iniciar Sesión</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#f3dfd1",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#ddc1ae",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#fff8f5",
+                        "background": "#fff8f5",
+                        "tertiary-fixed": "#6bfe9c",
+                        "primary-fixed-dim": "#ffb77d",
+                        "tertiary": "#006d37",
+                        "on-primary": "#ffffff",
+                        "secondary": "#0060ac",
+                        "on-secondary-fixed": "#001c39",
+                        "surface-container-highest": "#f3dfd1",
+                        "on-tertiary-container": "#004922",
+                        "inverse-primary": "#ffb77d",
+                        "secondary-fixed": "#d4e3ff",
+                        "surface-container": "#ffeadd",
+                        "on-tertiary-fixed": "#00210c",
+                        "on-primary-container": "#623200",
+                        "on-tertiary-fixed-variant": "#005228",
+                        "inverse-surface": "#3a2e25",
+                        "surface-tint": "#904d00",
+                        "surface-container-high": "#f9e4d7",
+                        "on-secondary-fixed-variant": "#004883",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#564334",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#ffdcc3",
+                        "on-surface": "#241912",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#ead6c9",
+                        "on-primary-fixed-variant": "#6e3900",
+                        "primary": "#904d00",
+                        "tertiary-fixed-dim": "#4ae183",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "on-primary-fixed": "#2f1500",
+                        "tertiary-container": "#1bc268",
+                        "on-background": "#241912",
+                        "primary-container": "#ff8c00",
+                        "surface": "#fff8f5",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#003e73",
+                        "secondary-container": "#68abff",
+                        "outline": "#897362",
+                        "inverse-on-surface": "#ffede3",
+                        "surface-container-low": "#fff1e9",
+                        "on-tertiary": "#ffffff"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-shadow {
+            box-shadow: 0 8px 32px rgba(36, 25, 18, 0.06);
+        }
+        .bg-warm-mesh {
+            background-color: #fff8f5;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(255, 140, 0, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(0, 96, 172, 0.05) 0px, transparent 50%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-warm-mesh min-h-screen flex flex-col font-body text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<main class="flex-grow flex flex-col items-center justify-center px-6 py-12">
+<div class="w-full max-w-md flex flex-col items-center">
+<div class="mb-12 text-center animate-fade-in">
+<div class="mb-4 inline-flex items-center justify-center p-4 bg-white rounded-xl editorial-shadow">
+<span class="material-symbols-outlined text-primary text-5xl" style="font-variation-settings: 'FILL' 1;">pets</span>
+</div>
+<h1 class="font-headline text-4xl font-extrabold text-on-surface tracking-tighter mb-2">PawsFound</h1>
+<p class="font-label text-sm uppercase tracking-widest text-outline">Digital Sanctuary</p>
+</div>
+<div class="w-full bg-white/60 backdrop-blur-xl rounded-xl p-2 mb-8 flex editorial-shadow">
+<button class="flex-1 py-3 text-sm font-semibold font-headline rounded-lg bg-white text-primary shadow-sm transition-all duration-200">
+                    Iniciar Sesión
+                </button>
+<button class="flex-1 py-3 text-sm font-semibold font-headline rounded-lg text-on-surface-variant hover:bg-white/40 transition-all duration-200">
+                    Crear Cuenta
+                </button>
+</div>
+<div class="w-full space-y-6">
+<div class="space-y-4">
+<div class="relative group">
+<label class="absolute -top-2.5 left-4 px-1 bg-surface-bright text-xs font-label tracking-wider text-outline group-focus-within:text-primary transition-colors">
+                            Correo Electrónico
+                        </label>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-4 text-on-surface placeholder:text-outline/50 focus:ring-2 focus:ring-primary/20 transition-all" placeholder="ejemplo@correo.com" type="email"/>
+</div>
+<div class="relative group">
+<label class="absolute -top-2.5 left-4 px-1 bg-surface-bright text-xs font-label tracking-wider text-outline group-focus-within:text-primary transition-colors">
+                            Contraseña
+                        </label>
+<input class="w-full bg-surface-container-low border-none rounded-lg px-4 py-4 text-on-surface placeholder:text-outline/50 focus:ring-2 focus:ring-primary/20 transition-all" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary">
+<span class="material-symbols-outlined text-xl">visibility</span>
+</button>
+</div>
+</div>
+<div class="flex justify-end px-1">
+<a class="text-sm font-medium text-secondary hover:underline transition-all" href="#">¿Olvidaste tu contraseña?</a>
+</div>
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-4 rounded-full font-headline font-bold text-lg shadow-lg hover:shadow-primary/20 transform active:scale-95 transition-all duration-200">
+                    Iniciar Sesión
+                </button>
+<div class="relative flex items-center py-4">
+<div class="flex-grow border-t border-outline-variant/30"></div>
+<span class="flex-shrink mx-4 text-xs font-label tracking-widest text-outline uppercase">o continuar con</span>
+<div class="flex-grow border-t border-outline-variant/30"></div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-3 bg-white border border-outline-variant/30 py-3.5 rounded-full hover:bg-surface-container-low transition-all active:scale-95">
+<img alt="Google" class="w-5 h-5" data-alt="Official Google logo with bright red yellow green and blue colors on a white circular background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaKOdEOjAUHcZqH2k8Db3XOA4fzMmnyKV4l39BkWWklcC6ZAB31ajlL1ROFc-sp6L5WjqotWakfR6WAYmmH1eZORdG8hviJdrVoSImQHiM2OtkS-mlclnNZKq-SjunNAUpIFG1_DyaAERuBHWlD5lcgpUUfr73F38-G2HRc9kttB4GUy0p9HPoJMjH2CHsrLm9WVme4G6sdmhh1GTN-LRgag2DuiqOzXrqREnY_13hXj397SB4V9j3UZgbOuOTGdqwMlIXRh9AEog"/>
+<span class="font-headline font-semibold text-on-surface text-sm">Google</span>
+</button>
+<button class="flex items-center justify-center gap-3 bg-white border border-outline-variant/30 py-3.5 rounded-full hover:bg-surface-container-low transition-all active:scale-95">
+<span class="material-symbols-outlined text-secondary text-2xl" style="font-variation-settings: 'FILL' 1;">social_leaderboard</span>
+<span class="font-headline font-semibold text-on-surface text-sm">Facebook</span>
+</button>
+</div>
+</div>
+<p class="mt-12 text-center text-on-surface-variant text-sm px-8">
+                Al continuar, aceptas nuestros 
+                <a class="font-semibold text-on-surface hover:text-primary underline-offset-4 underline" href="#">Términos de Servicio</a> 
+                y 
+                <a class="font-semibold text-on-surface hover:text-primary underline-offset-4 underline" href="#">Política de Privacidad</a>.
+            </p>
+</div>
+</main>
+<div class="fixed inset-0 -z-10 overflow-hidden opacity-40">
+<div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary-container/20 blur-[120px] rounded-full"></div>
+<div class="absolute top-[60%] -right-[10%] w-[50%] h-[50%] bg-secondary-container/20 blur-[120px] rounded-full"></div>
+</div>
+<div class="md:hidden h-2 w-32 bg-on-surface/10 rounded-full mx-auto mb-2 opacity-50"></div>
+</body></html>
