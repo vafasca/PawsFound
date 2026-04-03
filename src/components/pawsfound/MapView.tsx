@@ -24,6 +24,48 @@ interface ReportsCachePayload {
   savedAt: number;
 }
 
+const normalizeReport = (report: unknown): ReportCard | null => {
+  if (!report || typeof report !== 'object') return null;
+
+  const candidate = report as Partial<ReportCard> & {
+    reporter?: { name?: string | null } | null;
+    _count?: { sightings?: number | null } | null;
+  };
+
+  if (typeof candidate.id !== 'string' || !candidate.id) return null;
+
+  return {
+    id: candidate.id,
+    type: typeof candidate.type === 'string' ? candidate.type : 'lost',
+    petName: typeof candidate.petName === 'string' ? candidate.petName : 'Mascota',
+    species: typeof candidate.species === 'string' ? candidate.species : 'other',
+    breed: typeof candidate.breed === 'string' ? candidate.breed : null,
+    color: typeof candidate.color === 'string' ? candidate.color : null,
+    uniqueMarks: typeof candidate.uniqueMarks === 'string' ? candidate.uniqueMarks : null,
+    photoUrl: typeof candidate.photoUrl === 'string' ? candidate.photoUrl : null,
+    lat: typeof candidate.lat === 'number' ? candidate.lat : null,
+    lng: typeof candidate.lng === 'number' ? candidate.lng : null,
+    address: typeof candidate.address === 'string' ? candidate.address : null,
+    status: typeof candidate.status === 'string' ? candidate.status : 'active',
+    createdAt:
+      typeof candidate.createdAt === 'string'
+        ? candidate.createdAt
+        : new Date(0).toISOString(),
+    reporter: {
+      name:
+        typeof candidate.reporter?.name === 'string' && candidate.reporter.name.trim().length > 0
+          ? candidate.reporter.name
+          : 'Anónimo',
+    },
+    _count: {
+      sightings:
+        typeof candidate._count?.sightings === 'number' && Number.isFinite(candidate._count.sightings)
+          ? candidate._count.sightings
+          : 0,
+    },
+  };
+};
+
 export default function MapView() {
   const [reports, setReports] = useState<ReportCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,9 +73,13 @@ export default function MapView() {
   const geo = useGeolocation();
 
   const parseReports = useCallback((data: unknown): ReportCard[] => {
-    return Array.isArray(data)
-      ? (data as ReportCard[])
-      : ((data as { reports?: ReportCard[] } | null)?.reports || []);
+    const rawReports = Array.isArray(data)
+      ? data
+      : ((data as { reports?: unknown[] } | null)?.reports || []);
+
+    return rawReports
+      .map(normalizeReport)
+      .filter((report): report is ReportCard => report !== null);
   }, []);
 
   const readReportsCache = useCallback((): ReportsCachePayload | null => {
@@ -88,11 +134,15 @@ export default function MapView() {
       setLoading(false);
     }
 
-    const fetchReports = async (options?: { allowEmptyReplace?: boolean }) => {
-      const allowEmptyReplace = options?.allowEmptyReplace ?? false;
-
+    const fetchReports = async () => {
       try {
-        const response = await fetch('/api/reports?status=active', { cache: 'no-store' });
+        const response = await fetch(`/api/reports?status=active&t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, max-age=0',
+            Pragma: 'no-cache',
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch reports');
         }
@@ -101,13 +151,13 @@ export default function MapView() {
         const nextReports = parseReports(data);
 
         setReports((prevReports) => {
-          if (nextReports.length === 0 && prevReports.length > 0 && !allowEmptyReplace) {
+          if (nextReports.length === 0 && prevReports.length > 0) {
             return prevReports;
           }
           return nextReports;
         });
 
-        if (nextReports.length > 0 || allowEmptyReplace) {
+        if (nextReports.length > 0) {
           saveReportsCache(nextReports);
         }
 
@@ -119,21 +169,21 @@ export default function MapView() {
       }
     };
 
-    fetchReports({ allowEmptyReplace: true });
+    fetchReports();
 
     const reportsInterval = window.setInterval(() => {
-      fetchReports({ allowEmptyReplace: false });
+      fetchReports();
     }, REPORTS_CACHE_TTL_MS);
 
     const refreshOnVisibility = () => {
       if (document.visibilityState === 'visible') {
-        fetchReports({ allowEmptyReplace: false });
+        fetchReports();
       }
     };
 
     const refreshOnFocus = () => {
       if (!hasFetchedOnceRef.current) return;
-      fetchReports({ allowEmptyReplace: false });
+      fetchReports();
     };
 
     window.addEventListener('focus', refreshOnFocus);
