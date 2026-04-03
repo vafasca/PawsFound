@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
-import { AuthProvider } from '@/lib/auth-context';
+import { AuthProvider, useAuth } from '@/lib/auth-context';
 import TopAppBar from '@/components/pawsfound/TopAppBar';
 import BottomNavBar from '@/components/pawsfound/BottomNavBar';
 import PwaInstallBanner from '@/components/pawsfound/PwaInstallBanner';
@@ -16,15 +16,21 @@ import ChatDrawer from '@/components/pawsfound/ChatDrawer';
 import AdminDashboard from '@/components/pawsfound/AdminDashboard';
 import SettingsModals from '@/components/pawsfound/SettingsModals';
 import AddPetModal from '@/components/pawsfound/AddPetModal';
+import { useNotifications } from '@/hooks/use-notifications';
 
 function AppContent() {
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const setSelectedReport = useAppStore((s) => s.setSelectedReport);
+  const setShowDetail = useAppStore((s) => s.setShowDetail);
   const showAuth = useAppStore((s) => s.showAuth);
   const showChat = useAppStore((s) => s.showChat);
   const showAdmin = useAppStore((s) => s.showAdmin);
   const showSettings = useAppStore((s) => s.showSettings);
   const showAddPet = useAppStore((s) => s.showAddPet);
+  const { isAuthenticated, user } = useAuth();
+  const notifications = useNotifications();
+  const { supported, permission, ensurePushSubscription } = notifications;
 
   // Read initial tab from URL (for PWA shortcuts)
   useEffect(() => {
@@ -33,7 +39,26 @@ function AppContent() {
     if (tab === 'map' || tab === 'report' || tab === 'profile') {
       setActiveTab(tab);
     }
-  }, [setActiveTab]);
+    const reportId = params.get('reportId');
+    if (reportId) {
+      setActiveTab('home');
+      setSelectedReport(reportId);
+      setShowDetail(true);
+    }
+  }, [setActiveTab, setSelectedReport, setShowDetail]);
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.pushEnabled === false) return;
+    if (!supported) return;
+    if (permission !== 'granted') return;
+    ensurePushSubscription();
+  }, [
+    isAuthenticated,
+    user?.pushEnabled,
+    supported,
+    permission,
+    ensurePushSubscription,
+  ]);
 
   const isMap = activeTab === 'map';
 
