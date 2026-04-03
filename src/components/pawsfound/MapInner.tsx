@@ -90,7 +90,7 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
         iconAnchor: [10, 10],
       });
 
-      L.marker([userLat, userLng], { icon })
+      L.marker([userLat, userLng], { icon: userIcon })
         .addTo(map)
         .bindPopup('<b style="font-family:Be Vietnam Pro,sans-serif;">📍 Tu ubicación</b>');
     }

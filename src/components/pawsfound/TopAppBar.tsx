@@ -4,7 +4,7 @@ import { PawPrint, MapPin, ShieldAlert } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { useAuth } from '@/lib/auth-context';
 import { useGeolocation } from '@/hooks/use-geolocation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import NotificationPanel from './NotificationPanel';
 
 export default function TopAppBar() {
@@ -14,6 +14,15 @@ export default function TopAppBar() {
   const geo = useGeolocation();
   const { isAuthenticated, user } = useAuth();
   const [showLocation, setShowLocation] = useState(false);
+
+  useEffect(() => {
+    geo.requestLocation();
+    geo.startWatching();
+
+    return () => {
+      geo.stopWatching();
+    };
+  }, [geo.requestLocation, geo.startWatching, geo.stopWatching]);
 
   const tabTitles: Record<string, string> = {
     home: 'Inicio',
