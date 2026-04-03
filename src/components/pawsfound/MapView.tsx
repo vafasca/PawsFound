@@ -43,14 +43,18 @@ export default function MapView() {
     fetch('/api/reports?status=active', { cache: 'no-store' })
       .then((r) => r.json())
       .then((data) => setReports(parseReports(data)))
-      .catch(() => setReports([]))
+      .catch(() => {
+        // Preserve current markers if there is a temporary network error.
+      })
       .finally(() => setLoading(false));
 
     const reportsInterval = window.setInterval(() => {
       fetch('/api/reports?status=active', { cache: 'no-store' })
         .then((r) => r.json())
         .then((data) => setReports(parseReports(data)))
-        .catch(() => setReports([]));
+        .catch(() => {
+          // Keep previous reports to avoid map flicker/disappearing markers.
+        });
     }, 60 * 1000);
 
     return () => {
