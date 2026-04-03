@@ -24,6 +24,7 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
   const mapInstanceRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const reportsLayerRef = useRef<L.LayerGroup | null>(null);
+  const reportMarkersRef = useRef<Map<string, L.Marker>>(new Map());
   const lastCenteredPositionRef = useRef<L.LatLng | null>(null);
   const setSelectedReport = useAppStore((s) => s.setSelectedReport);
   const setShowDetail = useAppStore((s) => s.setShowDetail);
@@ -70,7 +71,7 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
     // Avoid visual flicker by re-centering only when movement is meaningful.
     if (movedMeters < 20) return;
 
-    map.setView([userLat, userLng], 14, { animate: false });
+    map.panTo([userLat, userLng], { animate: true, duration: 0.5 });
     lastCenteredPositionRef.current = nextPoint;
   }, [hasLocation, userLat, userLng]);
 
@@ -79,12 +80,12 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (userMarkerRef.current) {
-      map.removeLayer(userMarkerRef.current);
-      userMarkerRef.current = null;
-    }
-
     if (hasLocation && userLat !== null && userLng !== null) {
+      if (userMarkerRef.current) {
+        userMarkerRef.current.setLatLng([userLat, userLng]);
+        return;
+      }
+
       const userIcon = L.divIcon({
         className: 'user-marker',
         html: `<div style="
@@ -102,6 +103,12 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
       userMarkerRef.current = L.marker([userLat, userLng], { icon: userIcon })
         .addTo(map)
         .bindPopup('<b style="font-family:Be Vietnam Pro,sans-serif;">📍 Tu ubicación</b>');
+      return;
+    }
+
+    if (userMarkerRef.current) {
+      map.removeLayer(userMarkerRef.current);
+      userMarkerRef.current = null;
     }
   }, [hasLocation, userLat, userLng]);
 
@@ -110,19 +117,16 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (reportsLayerRef.current) {
-      map.removeLayer(reportsLayerRef.current);
-      reportsLayerRef.current = null;
+    if (!reportsLayerRef.current) {
+      reportsLayerRef.current = L.layerGroup().addTo(map);
     }
 
-    const layerGroup = L.layerGroup().addTo(map);
-    reportsLayerRef.current = layerGroup;
-
-    // Add markers for each report
-    const markers: L.Marker[] = [];
+    const layerGroup = reportsLayerRef.current;
+    const nextMarkerIds = new Set<string>();
 
     reports.forEach((report) => {
       if (report.lat == null || report.lng == null) return;
+      nextMarkerIds.add(report.id);
 
       const isLost = report.type === 'lost';
       const color = isLost ? '#904d00' : '#0060ac';
@@ -150,8 +154,15 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
         popupAnchor: [0, -38],
       });
 
+      const existingMarker = reportMarkersRef.current.get(report.id);
+      if (existingMarker) {
+        existingMarker.setLatLng([report.lat, report.lng]);
+        existingMarker.setIcon(icon);
+        return;
+      }
+
       const marker = L.marker([report.lat, report.lng], { icon }).addTo(layerGroup);
-      markers.push(marker);
+      reportMarkersRef.current.set(report.id, marker);
 
       const badgeText =
         report.status === 'found'
@@ -196,11 +207,22 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
       });
     });
 
+    reportMarkersRef.current.forEach((marker, id) => {
+      if (nextMarkerIds.has(id)) return;
+      layerGroup.removeLayer(marker);
+      reportMarkersRef.current.delete(id);
+    });
+
     // Fit reports only when there is no user location available.
     // If user location exists, keep map behavior centered on live GPS updates.
-    if (!hasLocation && markers.length > 0) {
-      const group = L.featureGroup(markers);
+    const visibleMarkers = Array.from(reportMarkersRef.current.values());
+    if (!hasLocation && visibleMarkers.length > 0) {
+      const group = L.featureGroup(visibleMarkers);
       map.fitBounds(group.getBounds().pad(0.2));
+    }
+
+    if (hasLocation && visibleMarkers.length > 0) {
+      map.invalidateSize(false);
     }
   }, [reports, hasLocation, setSelectedReport, setShowDetail]);
 
