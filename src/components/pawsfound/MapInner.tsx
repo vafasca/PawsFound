@@ -24,6 +24,7 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
   const mapInstanceRef = useRef<L.Map | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const reportsLayerRef = useRef<L.LayerGroup | null>(null);
+  const lastCenteredPositionRef = useRef<L.LatLng | null>(null);
   const setSelectedReport = useAppStore((s) => s.setSelectedReport);
   const setShowDetail = useAppStore((s) => s.setShowDetail);
 
@@ -62,7 +63,15 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
     const map = mapInstanceRef.current;
     if (!map || !hasLocation || userLat === null || userLng === null) return;
 
-    map.setView([userLat, userLng], 14, { animate: true });
+    const nextPoint = L.latLng(userLat, userLng);
+    const lastPoint = lastCenteredPositionRef.current;
+    const movedMeters = lastPoint ? lastPoint.distanceTo(nextPoint) : Infinity;
+
+    // Avoid visual flicker by re-centering only when movement is meaningful.
+    if (movedMeters < 20) return;
+
+    map.setView([userLat, userLng], 14, { animate: false });
+    lastCenteredPositionRef.current = nextPoint;
   }, [hasLocation, userLat, userLng]);
 
   // Add user location marker

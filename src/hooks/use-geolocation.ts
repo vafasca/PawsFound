@@ -33,6 +33,8 @@ export function useGeolocation() {
 
   const watchIdRef = useRef<number | null>(null);
   const reverseGeocodeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reverseGeocodeCacheRef = useRef<Map<string, string>>(new Map());
+  const lastReverseRequestRef = useRef<{ key: string; ts: number } | null>(null);
 
   const updatePosition = useCallback((position: GeolocationPosition) => {
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
@@ -69,24 +71,41 @@ export function useGeolocation() {
 
   // Reverse geocode address with debounce
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+    const cached = reverseGeocodeCacheRef.current.get(key);
+    if (cached) {
+      setState((prev) => ({ ...prev, address: cached }));
+      return;
+    }
+
+    const lastRequest = lastReverseRequestRef.current;
+    if (lastRequest && lastRequest.key === key && Date.now() - lastRequest.ts < 20000) {
+      return;
+    }
+
     if (reverseGeocodeTimeoutRef.current) {
       clearTimeout(reverseGeocodeTimeoutRef.current);
     }
+
+    lastReverseRequestRef.current = { key, ts: Date.now() };
+
     reverseGeocodeTimeoutRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es&zoom=16`
         );
+        if (!res.ok) return;
         const data = await res.json();
         if (data.display_name) {
           const parts = data.display_name.split(',');
           const shortAddress = parts.slice(0, 3).join(',').trim();
+          reverseGeocodeCacheRef.current.set(key, shortAddress);
           setState((prev) => ({ ...prev, address: shortAddress }));
         }
       } catch {
         // Keep coordinate-based address
       }
-    }, 500); // 500ms debounce
+    }, 900); // debounce to reduce reverse-geocoding request rate
   }, []);
 
   // Auto-reverse geocode when coordinates change
