@@ -2,6 +2,18 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+const LOCATION_CACHE_KEY = 'pawsfound:last-location';
+const LOCATION_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface CachedLocation {
+  lat: number;
+  lng: number;
+  accuracy: number | null;
+  heading: number | null;
+  speed: number | null;
+  savedAt: number;
+}
+
 interface GeolocationState {
   lat: number | null;
   lng: number | null;
@@ -17,18 +29,49 @@ interface GeolocationState {
 }
 
 export function useGeolocation() {
+  const readCachedLocation = (): CachedLocation | null => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+      const raw = window.localStorage.getItem(LOCATION_CACHE_KEY);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as CachedLocation;
+      if (
+        typeof parsed?.lat !== 'number' ||
+        typeof parsed?.lng !== 'number' ||
+        typeof parsed?.savedAt !== 'number'
+      ) {
+        return null;
+      }
+
+      if (Date.now() - parsed.savedAt > LOCATION_CACHE_TTL_MS) {
+        return null;
+      }
+
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
+  const cachedLocation = readCachedLocation();
+
   const [state, setState] = useState<GeolocationState>({
-    lat: null,
-    lng: null,
-    address: '',
+    lat: cachedLocation?.lat ?? null,
+    lng: cachedLocation?.lng ?? null,
+    address:
+      cachedLocation?.lat != null && cachedLocation?.lng != null
+        ? `${cachedLocation.lat.toFixed(4)}, ${cachedLocation.lng.toFixed(4)}`
+        : '',
     loading: false,
     error: null,
     supported: typeof navigator !== 'undefined' && 'geolocation' in navigator,
     watching: false,
-    accuracy: null,
-    lastUpdate: null,
-    heading: null,
-    speed: null,
+    accuracy: cachedLocation?.accuracy ?? null,
+    lastUpdate: cachedLocation?.savedAt ? new Date(cachedLocation.savedAt) : null,
+    heading: cachedLocation?.heading ?? null,
+    speed: cachedLocation?.speed ?? null,
   });
 
   const watchIdRef = useRef<number | null>(null);
@@ -38,6 +81,21 @@ export function useGeolocation() {
 
   const updatePosition = useCallback((position: GeolocationPosition) => {
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
+
+    try {
+      const payload: CachedLocation = {
+        lat: latitude,
+        lng: longitude,
+        accuracy,
+        heading,
+        speed,
+        savedAt: Date.now(),
+      };
+      window.localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore location cache write errors.
+    }
+
     setState((prev) => ({
       ...prev,
       lat: latitude,
