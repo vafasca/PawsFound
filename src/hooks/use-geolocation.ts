@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 const LOCATION_CACHE_KEY = 'pawsfound:last-location';
-const LOCATION_CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface CachedLocation {
   lat: number;
@@ -42,10 +41,6 @@ export function useGeolocation() {
         typeof parsed?.lng !== 'number' ||
         typeof parsed?.savedAt !== 'number'
       ) {
-        return null;
-      }
-
-      if (Date.now() - parsed.savedAt > LOCATION_CACHE_TTL_MS) {
         return null;
       }
 

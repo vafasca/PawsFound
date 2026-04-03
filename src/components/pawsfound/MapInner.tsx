@@ -192,7 +192,7 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
             </div>
             <p style="font-size:12px;color:#564334;margin:0;">${[report.breed, speciesLabel[report.species]].filter(Boolean).join(' · ')}</p>
             ${report.address ? `<p style="font-size:11px;color:#897362;margin-top:4px;">📍 ${report.address}</p>` : ''}
-            ${report._count.sightings > 0 ? `<p style="font-size:11px;color:#0060ac;margin-top:2px;">👁️ ${report._count.sightings} avistamiento${report._count.sightings > 1 ? 's' : ''}</p>` : ''}
+            ${(report._count?.sightings ?? 0) > 0 ? `<p style="font-size:11px;color:#0060ac;margin-top:2px;">👁️ ${report._count.sightings} avistamiento${report._count.sightings > 1 ? 's' : ''}</p>` : ''}
           </div>
         </div>`,
         {
