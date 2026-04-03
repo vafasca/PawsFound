@@ -16,6 +16,14 @@ const MapInner = dynamic(() => import('./MapInner'), {
   ),
 });
 
+const REPORTS_CACHE_KEY = 'pawsfound:active-reports-cache';
+const REPORTS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface ReportsCachePayload {
+  reports: ReportCard[];
+  savedAt: number;
+}
+
 export default function MapView() {
   const [reports, setReports] = useState<ReportCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +33,39 @@ export default function MapView() {
     return Array.isArray(data)
       ? (data as ReportCard[])
       : ((data as { reports?: ReportCard[] } | null)?.reports || []);
+  }, []);
+
+  const readReportsCache = useCallback((): ReportsCachePayload | null => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+      const raw = window.localStorage.getItem(REPORTS_CACHE_KEY);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw) as ReportsCachePayload;
+      if (!Array.isArray(parsed?.reports) || typeof parsed?.savedAt !== 'number') {
+        return null;
+      }
+
+      return parsed;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const saveReportsCache = useCallback((nextReports: ReportCard[]) => {
+    if (typeof window === 'undefined') return;
+
+    const payload: ReportsCachePayload = {
+      reports: nextReports,
+      savedAt: Date.now(),
+    };
+
+    try {
+      window.localStorage.setItem(REPORTS_CACHE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore cache write errors (private mode / storage full).
+    }
   }, []);
 
   useEffect(() => {
@@ -40,27 +81,45 @@ export default function MapView() {
   }, [geo.requestLocation]);
 
   useEffect(() => {
-    fetch('/api/reports?status=active', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((data) => setReports(parseReports(data)))
-      .catch(() => {
+    const cached = readReportsCache();
+    if (cached && Date.now() - cached.savedAt <= REPORTS_CACHE_TTL_MS) {
+      setReports(cached.reports);
+      setLoading(false);
+    }
+
+    const fetchReports = async () => {
+      try {
+        const response = await fetch('/api/reports?status=active', { cache: 'no-store' });
+        const data = await response.json();
+        const nextReports = parseReports(data);
+        setReports(nextReports);
+        saveReportsCache(nextReports);
+      } catch {
         // Preserve current markers if there is a temporary network error.
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
 
     const reportsInterval = window.setInterval(() => {
       fetch('/api/reports?status=active', { cache: 'no-store' })
         .then((r) => r.json())
-        .then((data) => setReports(parseReports(data)))
+        .then((data) => {
+          const nextReports = parseReports(data);
+          setReports(nextReports);
+          saveReportsCache(nextReports);
+        })
         .catch(() => {
-          // Keep previous reports to avoid map flicker/disappearing markers.
+          // Keep previous reports or cached data to avoid map flicker/disappearing markers.
         });
-    }, 60 * 1000);
+    }, REPORTS_CACHE_TTL_MS);
 
     return () => {
       window.clearInterval(reportsInterval);
     };
-  }, [parseReports]);
+  }, [parseReports, readReportsCache, saveReportsCache]);
 
   return (
     <div className="w-full h-full relative">
