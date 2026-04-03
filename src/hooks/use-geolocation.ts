@@ -40,6 +40,7 @@ export function useGeolocation() {
       ...prev,
       lat: latitude,
       lng: longitude,
+      address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
       accuracy,
       heading,
       speed,

@@ -182,6 +182,8 @@ export default function ReportView() {
       return;
     }
     const normalizedPetName = form.petName.trim() || 'Sin nombre';
+    const normalizedAddress = geo.address
+      || (geo.lat !== null && geo.lng !== null ? `${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)}` : 'La Paz, Bolivia');
     setSubmitting(true);
     try {
       const res = await fetch('/api/reports', {
@@ -197,7 +199,7 @@ export default function ReportView() {
           photoUrl: form.photoUrl || undefined,
           lat: geo.lat ?? -16.4955,
           lng: geo.lng ?? -68.1336,
-          address: geo.address || 'La Paz, Bolivia',
+          address: normalizedAddress,
           reporterId: user?.id || '',
         }),
       });
@@ -778,8 +780,10 @@ export default function ReportView() {
                   <div className="px-4 py-2.5 bg-white flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <MapPin className="w-4 h-4 text-paw-primary shrink-0" />
-                      <span className="text-sm text-paw-on-surface truncate">
-                        {geo.address || 'La Paz, Bolivia (default)'}
+                        <span className="text-sm text-paw-on-surface truncate">
+                        {geo.address || (geo.lat !== null && geo.lng !== null
+                          ? `${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)}`
+                          : 'La Paz, Bolivia (default)')}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -914,7 +918,9 @@ export default function ReportView() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-paw-on-surface font-medium">
-                        {geo.address || 'La Paz, Bolivia'}
+                        {geo.address || (geo.lat !== null && geo.lng !== null
+                          ? `${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)}`
+                          : 'La Paz, Bolivia')}
                       </p>
                       {geo.lat && (
                         <div className="flex items-center gap-2">

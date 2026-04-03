@@ -17,12 +17,7 @@ export default function TopAppBar() {
 
   useEffect(() => {
     geo.requestLocation();
-    geo.startWatching();
-
-    return () => {
-      geo.stopWatching();
-    };
-  }, [geo.requestLocation, geo.startWatching, geo.stopWatching]);
+  }, [geo.requestLocation]);
 
   const tabTitles: Record<string, string> = {
     home: 'Inicio',
