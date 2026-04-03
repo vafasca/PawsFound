@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { sendWebPushNotifications } from '@/lib/push-notifications';
 
 type NotificationStage = {
   key: 'initial' | '24h' | '48h';
@@ -143,6 +144,16 @@ export async function sendLostReportNotifications(
   }
 
   await db.notification.createMany({ data: toCreate });
+
+  await sendWebPushNotifications(
+    toCreate.map((item) => ({
+      userId: item.userId,
+      title: item.title,
+      body: item.body,
+      url: `/?tab=home&reportId=${report.id}`,
+      reportId: report.id,
+    }))
+  );
 }
 
 export async function processLostReportEscalations(): Promise<void> {

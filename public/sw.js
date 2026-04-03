@@ -76,6 +76,7 @@ self.addEventListener('push', (event) => {
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/',
+      reportId: data.reportId || null,
     },
     actions: [
       { action: 'view', title: 'Ver Reporte' },
@@ -89,7 +90,9 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   if (event.action === 'view' || !event.action) {
-    const url = event.notification.data?.url || '/';
+    const reportId = event.notification.data?.reportId;
+    const baseUrl = event.notification.data?.url || '/';
+    const url = reportId ? `/?tab=home&reportId=${encodeURIComponent(reportId)}` : baseUrl;
     event.waitUntil(
       clients.matchAll({ type: 'window' }).then((windowClients) => {
         for (const client of windowClients) {
