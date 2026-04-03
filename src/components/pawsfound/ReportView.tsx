@@ -181,6 +181,7 @@ export default function ReportView() {
       toast.error('Error de sesión');
       return;
     }
+    const normalizedPetName = form.petName.trim() || 'Sin nombre';
     setSubmitting(true);
     try {
       const res = await fetch('/api/reports', {
@@ -188,7 +189,7 @@ export default function ReportView() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: reportType,
-          petName: form.petName,
+          petName: normalizedPetName,
           species: form.species,
           breed: form.breed || undefined,
           color: form.color || undefined,
@@ -214,7 +215,7 @@ export default function ReportView() {
       // Send local notification
       if (notifications.canNotify) {
         notifications.sendLocalNotification('Alerta publicada', {
-          body: `Tu reporte de ${form.petName} está activo. Te avisaremos si hay avistamientos.`,
+          body: `Tu reporte de ${normalizedPetName} está activo. Te avisaremos si hay avistamientos.`,
           tag: 'report-published',
         });
       }
@@ -944,7 +945,7 @@ export default function ReportView() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={submitting || !form.petName}
+                disabled={submitting}
                 className="w-full py-4 rounded-2xl font-bold text-white text-lg bg-gradient-to-br from-paw-primary to-paw-primary-container hover:from-paw-on-primary-container hover:to-paw-primary transition-all shadow-lg shadow-paw-primary/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting ? (
