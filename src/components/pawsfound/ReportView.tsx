@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Eye, Camera, MapPin, Sparkles, Check,
   ChevronRight, ChevronLeft, Info, PawPrint, Loader2,
-  Crosshair, Dog, Cat, Rabbit, Navigation, Satellite,
+  Crosshair, Dog, Cat, Rabbit, Navigation,
   MapPinned,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -72,15 +72,13 @@ export default function ReportView() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-get location and start watching on mount
+  // Capture location only once when entering report flow.
   useEffect(() => {
     geo.requestLocation();
-    // Start real-time GPS tracking after initial position
-    const timer = setTimeout(() => {
-      geo.startWatching();
-    }, 3000);
+  }, [geo.requestLocation]);
+
+  useEffect(() => {
     return () => {
-      clearTimeout(timer);
       geo.stopWatching();
     };
   }, []);
@@ -291,36 +289,23 @@ export default function ReportView() {
 
       {isAuthenticated && (
       <>
-      {/* Real-time GPS Status Bar */}
+      {/* GPS Status Bar */}
       <div className={`mb-4 rounded-2xl p-3 transition-all duration-500 ${
-        geo.watching
-          ? 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/60'
-          : geo.lat
-            ? 'bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200/60'
-            : 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60'
+        geo.lat
+          ? 'bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-200/60'
+          : 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60'
       }`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             {/* Animated GPS indicator */}
             <div className="relative">
-              {geo.watching && (
-                <>
-                  <span className="absolute -top-1 -left-1 flex h-4 w-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  </span>
-                </>
-              )}
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                geo.watching
-                  ? 'bg-emerald-100'
-                  : geo.lat
-                    ? 'bg-blue-100'
-                    : 'bg-amber-100'
+                geo.lat
+                  ? 'bg-blue-100'
+                  : 'bg-amber-100'
               }`}>
                 {geo.loading ? (
                   <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
-                ) : geo.watching ? (
-                  <Satellite className="w-4 h-4 text-emerald-600" />
                 ) : geo.lat ? (
                   <MapPinned className="w-4 h-4 text-blue-600" />
                 ) : (
@@ -332,11 +317,9 @@ export default function ReportView() {
               <p className="text-xs font-semibold text-gray-800">
                 {geo.loading
                   ? 'Obteniendo ubicación GPS...'
-                  : geo.watching
-                    ? 'GPS Activo — Rastreando en tiempo real'
-                    : geo.lat
-                      ? 'Ubicación detectada'
-                      : 'GPS Desactivado'}
+                  : geo.lat
+                    ? 'Ubicación detectada'
+                    : 'GPS Desactivado'}
               </p>
               {geo.lat && (
                 <div className="flex items-center gap-2 mt-0.5">
@@ -358,30 +341,12 @@ export default function ReportView() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {!geo.watching && geo.lat && (
-              <button
-                type="button"
-                onClick={() => geo.startWatching()}
-                className="text-[10px] px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 font-bold hover:bg-emerald-200 transition-colors"
-              >
-                Activar GPS
-              </button>
-            )}
-            {geo.watching && (
-              <button
-                type="button"
-                onClick={() => geo.stopWatching()}
-                className="text-[10px] px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
-              >
-                Pausar
-              </button>
-            )}
             <button
               type="button"
               onClick={() => geo.requestLocation()}
               disabled={geo.loading}
               className="p-1.5 rounded-full bg-white/60 hover:bg-white transition-colors disabled:opacity-50"
-              title="Refrescar ubicación"
+              title="Recargar ubicación"
             >
               <Crosshair className="w-3.5 h-3.5 text-gray-500" />
             </button>
@@ -733,21 +698,11 @@ export default function ReportView() {
                       <div className="text-center">
                         <div className="relative inline-block">
                           <div className="w-12 h-12 bg-paw-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                            {geo.watching ? (
-                              <Satellite className="w-6 h-6 text-emerald-600" />
-                            ) : (
-                              <MapPin className="w-6 h-6 text-paw-primary" />
-                            )}
+                            <MapPin className="w-6 h-6 text-paw-primary" />
                           </div>
-                          {geo.watching && (
-                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-                            </span>
-                          )}
                         </div>
                         <p className="text-xs text-paw-primary font-semibold">
-                          📍 {geo.watching ? 'GPS Activo' : 'Ubicación capturada'}
+                          📍 Ubicación capturada
                         </p>
                         <p className="text-[11px] text-paw-on-surface-variant mt-1 max-w-[200px] mx-auto">
                           {geo.address}

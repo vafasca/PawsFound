@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { MapPin, Loader2 } from 'lucide-react';
 import type { ReportCard } from './PetCard';
@@ -21,28 +21,42 @@ export default function MapView() {
   const [loading, setLoading] = useState(true);
   const geo = useGeolocation();
 
+  const parseReports = useCallback((data: unknown): ReportCard[] => {
+    return Array.isArray(data)
+      ? (data as ReportCard[])
+      : ((data as { reports?: ReportCard[] } | null)?.reports || []);
+  }, []);
+
   useEffect(() => {
     geo.requestLocation();
-    geo.startWatching();
+
+    const locationInterval = window.setInterval(() => {
+      geo.requestLocation();
+    }, 5 * 60 * 1000);
 
     return () => {
-      geo.stopWatching();
+      window.clearInterval(locationInterval);
     };
-  }, [geo.requestLocation, geo.startWatching, geo.stopWatching]);
+  }, [geo.requestLocation]);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/reports?type=lost&status=active').then((r) => r.json()),
-      fetch('/api/reports?type=sighted&status=active').then((r) => r.json()),
-    ])
-      .then(([lostData, sightedData]) => {
-        const lostList = Array.isArray(lostData) ? lostData : (lostData?.reports || []);
-        const sightedList = Array.isArray(sightedData) ? sightedData : (sightedData?.reports || []);
-        setReports([...lostList, ...sightedList]);
-      })
+    fetch('/api/reports?status=active', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((data) => setReports(parseReports(data)))
       .catch(() => setReports([]))
       .finally(() => setLoading(false));
-  }, []);
+
+    const reportsInterval = window.setInterval(() => {
+      fetch('/api/reports?status=active', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then((data) => setReports(parseReports(data)))
+        .catch(() => setReports([]));
+    }, 60 * 1000);
+
+    return () => {
+      window.clearInterval(reportsInterval);
+    };
+  }, [parseReports]);
 
   return (
     <div className="w-full h-full relative">
