@@ -24,6 +24,48 @@ interface ReportsCachePayload {
   savedAt: number;
 }
 
+const normalizeReport = (report: unknown): ReportCard | null => {
+  if (!report || typeof report !== 'object') return null;
+
+  const candidate = report as Partial<ReportCard> & {
+    reporter?: { name?: string | null } | null;
+    _count?: { sightings?: number | null } | null;
+  };
+
+  if (typeof candidate.id !== 'string' || !candidate.id) return null;
+
+  return {
+    id: candidate.id,
+    type: typeof candidate.type === 'string' ? candidate.type : 'lost',
+    petName: typeof candidate.petName === 'string' ? candidate.petName : 'Mascota',
+    species: typeof candidate.species === 'string' ? candidate.species : 'other',
+    breed: typeof candidate.breed === 'string' ? candidate.breed : null,
+    color: typeof candidate.color === 'string' ? candidate.color : null,
+    uniqueMarks: typeof candidate.uniqueMarks === 'string' ? candidate.uniqueMarks : null,
+    photoUrl: typeof candidate.photoUrl === 'string' ? candidate.photoUrl : null,
+    lat: typeof candidate.lat === 'number' ? candidate.lat : null,
+    lng: typeof candidate.lng === 'number' ? candidate.lng : null,
+    address: typeof candidate.address === 'string' ? candidate.address : null,
+    status: typeof candidate.status === 'string' ? candidate.status : 'active',
+    createdAt:
+      typeof candidate.createdAt === 'string'
+        ? candidate.createdAt
+        : new Date(0).toISOString(),
+    reporter: {
+      name:
+        typeof candidate.reporter?.name === 'string' && candidate.reporter.name.trim().length > 0
+          ? candidate.reporter.name
+          : 'Anónimo',
+    },
+    _count: {
+      sightings:
+        typeof candidate._count?.sightings === 'number' && Number.isFinite(candidate._count.sightings)
+          ? candidate._count.sightings
+          : 0,
+    },
+  };
+};
+
 export default function MapView() {
   const [reports, setReports] = useState<ReportCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,9 +73,21 @@ export default function MapView() {
   const geo = useGeolocation();
 
   const parseReports = useCallback((data: unknown): ReportCard[] => {
-    return Array.isArray(data)
-      ? (data as ReportCard[])
-      : ((data as { reports?: ReportCard[] } | null)?.reports || []);
+    const rawReports = Array.isArray(data)
+      ? data
+      : ((data as { reports?: unknown[] } | null)?.reports || []);
+
+    const normalized = rawReports
+      .map(normalizeReport)
+      .filter((report): report is ReportCard => report !== null);
+    const droppedCount = rawReports.length - normalized.length;
+    if (droppedCount > 0) {
+      console.warn('[MapView] Dropped invalid reports during normalization', {
+        received: rawReports.length,
+        kept: normalized.length,
+      });
+    }
+    return normalized;
   }, []);
 
   const readReportsCache = useCallback((): ReportsCachePayload | null => {
@@ -71,6 +125,7 @@ export default function MapView() {
 
   useEffect(() => {
     geo.requestLocation();
+    console.info('[MapView] Initial location request fired');
 
     const locationInterval = window.setInterval(() => {
       geo.requestLocation();
@@ -83,57 +138,73 @@ export default function MapView() {
 
   useEffect(() => {
     const cached = readReportsCache();
-    if (cached && Date.now() - cached.savedAt <= REPORTS_CACHE_TTL_MS && cached.reports.length > 0) {
+    if (cached && cached.reports.length > 0) {
+      console.info('[MapView] Loaded reports from cache', {
+        cachedReports: cached.reports.length,
+        cacheAgeMs: Date.now() - cached.savedAt,
+      });
       setReports(cached.reports);
       setLoading(false);
     }
 
-    const fetchReports = async (options?: { allowEmptyReplace?: boolean }) => {
-      const allowEmptyReplace = options?.allowEmptyReplace ?? false;
-
+    const fetchReports = async () => {
+      console.info('[MapView] Fetching reports...');
       try {
-        const response = await fetch('/api/reports?status=active', { cache: 'no-store' });
+        const response = await fetch(`/api/reports?status=active&t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, max-age=0',
+            Pragma: 'no-cache',
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch reports');
         }
 
         const data = await response.json();
         const nextReports = parseReports(data);
+        console.info('[MapView] Reports fetch completed', {
+          reportsReceived: nextReports.length,
+        });
 
         setReports((prevReports) => {
-          if (nextReports.length === 0 && prevReports.length > 0 && !allowEmptyReplace) {
+          if (nextReports.length === 0 && prevReports.length > 0) {
+            console.warn('[MapView] Ignoring empty reports response and keeping previous data', {
+              previousReports: prevReports.length,
+            });
             return prevReports;
           }
           return nextReports;
         });
 
-        if (nextReports.length > 0 || allowEmptyReplace) {
+        if (nextReports.length > 0) {
           saveReportsCache(nextReports);
         }
 
         hasFetchedOnceRef.current = true;
-      } catch {
+      } catch (error) {
+        console.error('[MapView] Failed to fetch reports', error);
         // Preserve current markers if there is a temporary network error.
       } finally {
         setLoading(false);
       }
     };
 
-    fetchReports({ allowEmptyReplace: true });
+    fetchReports();
 
     const reportsInterval = window.setInterval(() => {
-      fetchReports({ allowEmptyReplace: false });
+      fetchReports();
     }, REPORTS_CACHE_TTL_MS);
 
     const refreshOnVisibility = () => {
       if (document.visibilityState === 'visible') {
-        fetchReports({ allowEmptyReplace: false });
+        fetchReports();
       }
     };
 
     const refreshOnFocus = () => {
       if (!hasFetchedOnceRef.current) return;
-      fetchReports({ allowEmptyReplace: false });
+      fetchReports();
     };
 
     window.addEventListener('focus', refreshOnFocus);
@@ -145,6 +216,17 @@ export default function MapView() {
       document.removeEventListener('visibilitychange', refreshOnVisibility);
     };
   }, [parseReports, readReportsCache, saveReportsCache]);
+
+  useEffect(() => {
+    console.info('[MapView] State update', {
+      loading,
+      reports: reports.length,
+      hasLocation: geo.hasLocation,
+      userLat: geo.lat,
+      userLng: geo.lng,
+      geoError: geo.error,
+    });
+  }, [loading, reports.length, geo.hasLocation, geo.lat, geo.lng, geo.error]);
 
   return (
     <div className="w-full h-full relative">
