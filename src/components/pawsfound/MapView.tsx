@@ -129,7 +129,7 @@ export default function MapView() {
 
   useEffect(() => {
     const cached = readReportsCache();
-    if (cached && Date.now() - cached.savedAt <= REPORTS_CACHE_TTL_MS && cached.reports.length > 0) {
+    if (cached && cached.reports.length > 0) {
       setReports(cached.reports);
       setLoading(false);
     }
