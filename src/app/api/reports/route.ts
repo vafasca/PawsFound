@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { processLostReportEscalations, sendLostReportNotifications } from '@/lib/lost-report-notifications';
 
 const COORDINATE_ADDRESS_REGEX = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/;
 
@@ -52,6 +53,8 @@ export async function GET(request: NextRequest) {
     if (status) {
       where.status = status;
     }
+
+    await processLostReportEscalations();
 
     const reports = await db.report.findMany({
       where,
@@ -136,6 +139,10 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    if (report.type === 'lost') {
+      await sendLostReportNotifications(report.id, 'initial');
+    }
 
     return NextResponse.json({ report }, { status: 201 });
   } catch (error) {
