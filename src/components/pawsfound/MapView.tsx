@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { MapPin, Loader2 } from 'lucide-react';
 import type { ReportCard } from './PetCard';
@@ -27,6 +27,7 @@ interface ReportsCachePayload {
 export default function MapView() {
   const [reports, setReports] = useState<ReportCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetchedOnceRef = useRef(false);
   const geo = useGeolocation();
 
   const parseReports = useCallback((data: unknown): ReportCard[] => {
@@ -82,18 +83,35 @@ export default function MapView() {
 
   useEffect(() => {
     const cached = readReportsCache();
-    if (cached && Date.now() - cached.savedAt <= REPORTS_CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.savedAt <= REPORTS_CACHE_TTL_MS && cached.reports.length > 0) {
       setReports(cached.reports);
       setLoading(false);
     }
 
-    const fetchReports = async () => {
+    const fetchReports = async (options?: { allowEmptyReplace?: boolean }) => {
+      const allowEmptyReplace = options?.allowEmptyReplace ?? false;
+
       try {
         const response = await fetch('/api/reports?status=active', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error('Failed to fetch reports');
+        }
+
         const data = await response.json();
         const nextReports = parseReports(data);
-        setReports(nextReports);
-        saveReportsCache(nextReports);
+
+        setReports((prevReports) => {
+          if (nextReports.length === 0 && prevReports.length > 0 && !allowEmptyReplace) {
+            return prevReports;
+          }
+          return nextReports;
+        });
+
+        if (nextReports.length > 0 || allowEmptyReplace) {
+          saveReportsCache(nextReports);
+        }
+
+        hasFetchedOnceRef.current = true;
       } catch {
         // Preserve current markers if there is a temporary network error.
       } finally {
@@ -101,23 +119,30 @@ export default function MapView() {
       }
     };
 
-    fetchReports();
+    fetchReports({ allowEmptyReplace: true });
 
     const reportsInterval = window.setInterval(() => {
-      fetch('/api/reports?status=active', { cache: 'no-store' })
-        .then((r) => r.json())
-        .then((data) => {
-          const nextReports = parseReports(data);
-          setReports(nextReports);
-          saveReportsCache(nextReports);
-        })
-        .catch(() => {
-          // Keep previous reports or cached data to avoid map flicker/disappearing markers.
-        });
+      fetchReports({ allowEmptyReplace: false });
     }, REPORTS_CACHE_TTL_MS);
+
+    const refreshOnVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchReports({ allowEmptyReplace: false });
+      }
+    };
+
+    const refreshOnFocus = () => {
+      if (!hasFetchedOnceRef.current) return;
+      fetchReports({ allowEmptyReplace: false });
+    };
+
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnVisibility);
 
     return () => {
       window.clearInterval(reportsInterval);
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnVisibility);
     };
   }, [parseReports, readReportsCache, saveReportsCache]);
 
@@ -130,20 +155,26 @@ export default function MapView() {
             Cargando reportes...
           </p>
         </div>
-      ) : reports.length === 0 ? (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-paw-surface-high gap-3">
-          <MapPin className="w-12 h-12 text-paw-outline" />
-          <p className="text-sm text-paw-on-surface-variant font-medium">
-            No hay reportes activos en el mapa
-          </p>
-        </div>
       ) : (
-        <MapInner
-          reports={reports}
-          userLat={geo.lat}
-          userLng={geo.lng}
-          hasLocation={geo.hasLocation}
-        />
+        <>
+          <MapInner
+            reports={reports}
+            userLat={geo.lat}
+            userLng={geo.lng}
+            hasLocation={geo.hasLocation}
+          />
+
+          {reports.length === 0 && (
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-sm border border-paw-outline-variant/30 px-4 py-3 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-paw-outline" />
+                <p className="text-sm text-paw-on-surface-variant font-medium">
+                  No hay reportes activos en el mapa
+                </p>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Map controls overlay */}
