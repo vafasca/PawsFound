@@ -51,6 +51,7 @@ export function useGeolocation() {
   };
 
   const cachedLocation = readCachedLocation();
+  const initialCachedLocationRef = useRef<CachedLocation | null>(cachedLocation);
 
   const [state, setState] = useState<GeolocationState>({
     lat: cachedLocation?.lat ?? null,
@@ -73,6 +74,20 @@ export function useGeolocation() {
   const reverseGeocodeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reverseGeocodeCacheRef = useRef<Map<string, string>>(new Map());
   const lastReverseRequestRef = useRef<{ key: string; ts: number } | null>(null);
+
+  useEffect(() => {
+    const initialCachedLocation = initialCachedLocationRef.current;
+    if (initialCachedLocation) {
+      console.info('[Geo] Loaded cached location', {
+        lat: initialCachedLocation.lat,
+        lng: initialCachedLocation.lng,
+        ageMs: Date.now() - initialCachedLocation.savedAt,
+      });
+      return;
+    }
+
+    console.info('[Geo] No cached location found');
+  }, []);
 
   const updatePosition = useCallback((position: GeolocationPosition) => {
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
@@ -104,6 +119,13 @@ export function useGeolocation() {
       supported: true,
       lastUpdate: new Date(),
     }));
+    console.info('[Geo] Position updated', {
+      latitude,
+      longitude,
+      accuracy,
+      heading,
+      speed,
+    });
   }, []);
 
   const handleError = useCallback((error: GeolocationPositionError) => {
@@ -120,6 +142,7 @@ export function useGeolocation() {
         break;
     }
     setState((prev) => ({ ...prev, loading: false, error: errorMsg, watching: false }));
+    console.error('[Geo] Position error', { code: error.code, message: error.message, errorMsg });
   }, []);
 
   // Reverse geocode address with debounce
@@ -176,6 +199,7 @@ export function useGeolocation() {
     }
 
     setState((s) => ({ ...s, loading: true, error: null }));
+    console.info('[Geo] Requesting single location');
 
     navigator.geolocation.getCurrentPosition(
       updatePosition,
@@ -201,6 +225,7 @@ export function useGeolocation() {
     }
 
     setState((s) => ({ ...s, loading: true, error: null, watching: true }));
+    console.info('[Geo] Starting location watch');
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       updatePosition,
@@ -220,6 +245,7 @@ export function useGeolocation() {
       watchIdRef.current = null;
     }
     setState((s) => ({ ...s, watching: false }));
+    console.info('[Geo] Stopped location watch');
   }, []);
 
   // Cleanup on unmount

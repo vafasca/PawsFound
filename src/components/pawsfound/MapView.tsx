@@ -77,9 +77,17 @@ export default function MapView() {
       ? data
       : ((data as { reports?: unknown[] } | null)?.reports || []);
 
-    return rawReports
+    const normalized = rawReports
       .map(normalizeReport)
       .filter((report): report is ReportCard => report !== null);
+    const droppedCount = rawReports.length - normalized.length;
+    if (droppedCount > 0) {
+      console.warn('[MapView] Dropped invalid reports during normalization', {
+        received: rawReports.length,
+        kept: normalized.length,
+      });
+    }
+    return normalized;
   }, []);
 
   const readReportsCache = useCallback((): ReportsCachePayload | null => {
@@ -117,6 +125,7 @@ export default function MapView() {
 
   useEffect(() => {
     geo.requestLocation();
+    console.info('[MapView] Initial location request fired');
 
     const locationInterval = window.setInterval(() => {
       geo.requestLocation();
@@ -130,11 +139,16 @@ export default function MapView() {
   useEffect(() => {
     const cached = readReportsCache();
     if (cached && cached.reports.length > 0) {
+      console.info('[MapView] Loaded reports from cache', {
+        cachedReports: cached.reports.length,
+        cacheAgeMs: Date.now() - cached.savedAt,
+      });
       setReports(cached.reports);
       setLoading(false);
     }
 
     const fetchReports = async () => {
+      console.info('[MapView] Fetching reports...');
       try {
         const response = await fetch(`/api/reports?status=active&t=${Date.now()}`, {
           cache: 'no-store',
@@ -149,9 +163,15 @@ export default function MapView() {
 
         const data = await response.json();
         const nextReports = parseReports(data);
+        console.info('[MapView] Reports fetch completed', {
+          reportsReceived: nextReports.length,
+        });
 
         setReports((prevReports) => {
           if (nextReports.length === 0 && prevReports.length > 0) {
+            console.warn('[MapView] Ignoring empty reports response and keeping previous data', {
+              previousReports: prevReports.length,
+            });
             return prevReports;
           }
           return nextReports;
@@ -162,7 +182,8 @@ export default function MapView() {
         }
 
         hasFetchedOnceRef.current = true;
-      } catch {
+      } catch (error) {
+        console.error('[MapView] Failed to fetch reports', error);
         // Preserve current markers if there is a temporary network error.
       } finally {
         setLoading(false);
@@ -195,6 +216,17 @@ export default function MapView() {
       document.removeEventListener('visibilitychange', refreshOnVisibility);
     };
   }, [parseReports, readReportsCache, saveReportsCache]);
+
+  useEffect(() => {
+    console.info('[MapView] State update', {
+      loading,
+      reports: reports.length,
+      hasLocation: geo.hasLocation,
+      userLat: geo.lat,
+      userLng: geo.lng,
+      geoError: geo.error,
+    });
+  }, [loading, reports.length, geo.hasLocation, geo.lat, geo.lng, geo.error]);
 
   return (
     <div className="w-full h-full relative">
