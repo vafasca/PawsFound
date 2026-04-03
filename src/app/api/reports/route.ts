@@ -1,6 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+const COORDINATE_ADDRESS_REGEX = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/;
+
+async function reverseGeocodeAddress(lat: number, lng: number): Promise<string | null> {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  try {
+    const controller = new AbortController();
+    timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es&zoom=16`,
+      {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'PawsFound/1.0 (contact: pawsfound.app@gmail.com)',
+        },
+      }
+    );
+
+    if (timeout) clearTimeout(timeout);
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (!data?.display_name) return null;
+
+    const parts = String(data.display_name).split(',');
+    return parts.slice(0, 4).join(',').trim();
+  } catch {
+    if (timeout) clearTimeout(timeout);
+    return null;
+  }
+}
+
 // GET /api/reports - List all reports with optional filters
 export async function GET(request: NextRequest) {
   try {
@@ -69,6 +101,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const incomingAddress = typeof address === 'string' ? address.trim() : '';
+    const shouldReverseGeocode =
+      typeof lat === 'number'
+      && typeof lng === 'number'
+      && (
+        !incomingAddress
+        || incomingAddress === 'La Paz, Bolivia'
+        || incomingAddress === 'La Paz, Bolivia (default)'
+        || COORDINATE_ADDRESS_REGEX.test(incomingAddress)
+      );
+
+    const resolvedAddress = shouldReverseGeocode
+      ? (await reverseGeocodeAddress(lat, lng)) || incomingAddress || `${lat.toFixed(4)}, ${lng.toFixed(4)}`
+      : incomingAddress;
+
     const report = await db.report.create({
       data: {
         type,
@@ -80,7 +127,7 @@ export async function POST(request: NextRequest) {
         photoUrl: photoUrl || null,
         lat: lat ?? null,
         lng: lng ?? null,
-        address: address || null,
+        address: resolvedAddress || null,
         reporterId,
       },
       include: {

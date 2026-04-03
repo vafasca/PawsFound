@@ -22,6 +22,15 @@ export default function MapView() {
   const geo = useGeolocation();
 
   useEffect(() => {
+    geo.requestLocation();
+    geo.startWatching();
+
+    return () => {
+      geo.stopWatching();
+    };
+  }, [geo.requestLocation, geo.startWatching, geo.stopWatching]);
+
+  useEffect(() => {
     Promise.all([
       fetch('/api/reports?type=lost&status=active').then((r) => r.json()),
       fetch('/api/reports?type=sighted&status=active').then((r) => r.json()),

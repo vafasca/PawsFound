@@ -22,6 +22,9 @@ const speciesLabel: Record<string, string> = {
 export default function MapInner({ reports, userLat, userLng, hasLocation }: MapInnerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const reportsLayerRef = useRef<L.LayerGroup | null>(null);
+  const lastCenteredPositionRef = useRef<L.LatLng | null>(null);
   const setSelectedReport = useAppStore((s) => s.setSelectedReport);
   const setShowDetail = useAppStore((s) => s.setShowDetail);
 
@@ -60,7 +63,15 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
     const map = mapInstanceRef.current;
     if (!map || !hasLocation || userLat === null || userLng === null) return;
 
-    map.setView([userLat, userLng], 14, { animate: true });
+    const nextPoint = L.latLng(userLat, userLng);
+    const lastPoint = lastCenteredPositionRef.current;
+    const movedMeters = lastPoint ? lastPoint.distanceTo(nextPoint) : Infinity;
+
+    // Avoid visual flicker by re-centering only when movement is meaningful.
+    if (movedMeters < 20) return;
+
+    map.setView([userLat, userLng], 14, { animate: false });
+    lastCenteredPositionRef.current = nextPoint;
   }, [hasLocation, userLat, userLng]);
 
   // Add user location marker
@@ -68,12 +79,10 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Remove existing user marker
-    map.eachLayer((layer) => {
-      if ((layer as L.Marker).options?.className === 'user-marker') {
-        map.removeLayer(layer);
-      }
-    });
+    if (userMarkerRef.current) {
+      map.removeLayer(userMarkerRef.current);
+      userMarkerRef.current = null;
+    }
 
     if (hasLocation && userLat !== null && userLng !== null) {
       const userIcon = L.divIcon({
@@ -90,7 +99,7 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
         iconAnchor: [10, 10],
       });
 
-      L.marker([userLat, userLng], { icon })
+      userMarkerRef.current = L.marker([userLat, userLng], { icon: userIcon })
         .addTo(map)
         .bindPopup('<b style="font-family:Be Vietnam Pro,sans-serif;">📍 Tu ubicación</b>');
     }
@@ -101,12 +110,13 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Clear existing report markers
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker && (layer as L.Marker).options?.className !== 'user-marker') {
-        map.removeLayer(layer);
-      }
-    });
+    if (reportsLayerRef.current) {
+      map.removeLayer(reportsLayerRef.current);
+      reportsLayerRef.current = null;
+    }
+
+    const layerGroup = L.layerGroup().addTo(map);
+    reportsLayerRef.current = layerGroup;
 
     // Add markers for each report
     const markers: L.Marker[] = [];
@@ -140,7 +150,7 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
         popupAnchor: [0, -38],
       });
 
-      const marker = L.marker([report.lat, report.lng], { icon }).addTo(map);
+      const marker = L.marker([report.lat, report.lng], { icon }).addTo(layerGroup);
       markers.push(marker);
 
       const badgeText =
@@ -179,21 +189,20 @@ export default function MapInner({ reports, userLat, userLng, hasLocation }: Map
           className: 'custom-popup',
         }
       );
+
+      marker.on('click', () => {
+        setSelectedReport(report.id);
+        setShowDetail(true);
+      });
     });
 
-    // Auto-fit bounds if user has location
-    if (hasLocation && markers.length > 0) {
-      const allPoints = markers.map((m) => m.getLatLng());
-      if (userLat !== null && userLng !== null) {
-        allPoints.push(L.latLng(userLat, userLng));
-      }
-      const bounds = L.latLngBounds(allPoints);
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-    } else if (markers.length > 0) {
+    // Fit reports only when there is no user location available.
+    // If user location exists, keep map behavior centered on live GPS updates.
+    if (!hasLocation && markers.length > 0) {
       const group = L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.2));
     }
-  }, [reports, hasLocation, userLat, userLng]);
+  }, [reports, hasLocation, setSelectedReport, setShowDetail]);
 
   return <div ref={mapRef} className="w-full h-full" />;
 }
