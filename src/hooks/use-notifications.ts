@@ -71,12 +71,48 @@ export function useNotifications() {
     [sendLocalNotification]
   );
 
+  const ensurePushSubscription = useCallback(async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    if (state.permission !== 'granted') return false;
+
+    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidPublicKey) return false;
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        const key = Uint8Array.from(
+          atob(vapidPublicKey.replace(/-/g, '+').replace(/_/g, '/')),
+          (char) => char.charCodeAt(0)
+        );
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: key,
+        });
+      }
+
+      await fetch('/api/push/subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription }),
+      });
+
+      setState((s) => ({ ...s, subscribed: true }));
+      return true;
+    } catch {
+      return false;
+    }
+  }, [state.permission]);
+
   return {
     ...state,
     requestPermission,
     sendLocalNotification,
     notifyNearbyPets,
     notifyNewSighting,
+    ensurePushSubscription,
     canNotify: state.supported && state.permission === 'granted',
   };
 }
