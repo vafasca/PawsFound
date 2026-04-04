@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppStore } from '@/store/app-store';
-import { AuthProvider } from '@/lib/auth-context';
+import { AuthProvider, useAuth } from '@/lib/auth-context';
 import TopAppBar from '@/components/pawsfound/TopAppBar';
 import BottomNavBar from '@/components/pawsfound/BottomNavBar';
 import PwaInstallBanner from '@/components/pawsfound/PwaInstallBanner';
@@ -16,15 +16,19 @@ import ChatDrawer from '@/components/pawsfound/ChatDrawer';
 import AdminDashboard from '@/components/pawsfound/AdminDashboard';
 import SettingsModals from '@/components/pawsfound/SettingsModals';
 import AddPetModal from '@/components/pawsfound/AddPetModal';
+import OneSignalBootstrap from '@/components/pawsfound/OneSignalBootstrap';
 
 function AppContent() {
   const activeTab = useAppStore((s) => s.activeTab);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const setSelectedReport = useAppStore((s) => s.setSelectedReport);
+  const setShowDetail = useAppStore((s) => s.setShowDetail);
   const showAuth = useAppStore((s) => s.showAuth);
   const showChat = useAppStore((s) => s.showChat);
   const showAdmin = useAppStore((s) => s.showAdmin);
   const showSettings = useAppStore((s) => s.showSettings);
   const showAddPet = useAppStore((s) => s.showAddPet);
+  const { isAuthenticated } = useAuth();
 
   // Read initial tab from URL (for PWA shortcuts)
   useEffect(() => {
@@ -33,7 +37,13 @@ function AppContent() {
     if (tab === 'map' || tab === 'report' || tab === 'profile') {
       setActiveTab(tab);
     }
-  }, [setActiveTab]);
+    const reportId = params.get('reportId');
+    if (reportId) {
+      setActiveTab('home');
+      setSelectedReport(reportId);
+      setShowDetail(true);
+    }
+  }, [setActiveTab, setSelectedReport, setShowDetail]);
 
   const isMap = activeTab === 'map';
 
@@ -79,6 +89,7 @@ function AppContent() {
       </main>
 
       <BottomNavBar />
+      {isAuthenticated && <OneSignalBootstrap />}
       <PetDetailModal />
       <PwaInstallBanner />
 

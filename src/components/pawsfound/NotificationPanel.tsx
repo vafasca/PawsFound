@@ -14,6 +14,7 @@ interface Notification {
   title: string;
   body: string;
   type: string;
+  data?: string | null;
   read: boolean;
   createdAt: string;
 }
@@ -21,6 +22,9 @@ interface Notification {
 export default function NotificationPanel() {
   const notifications = useAppStore((s) => s.notifications);
   const setNotifications = useAppStore((s) => s.setNotifications);
+  const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const setSelectedReport = useAppStore((s) => s.setSelectedReport);
+  const setShowDetail = useAppStore((s) => s.setShowDetail);
   const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>([]);
@@ -107,6 +111,15 @@ export default function NotificationPanel() {
     }
   };
 
+  const openNotificationTarget = (notif: Notification) => {
+    const reportId = notif.data?.split(':')?.[0];
+    if (!reportId) return;
+    setActiveTab('home');
+    setSelectedReport(reportId);
+    setShowDetail(true);
+    setOpen(false);
+  };
+
   if (!isAuthenticated) return null;
 
   return (
@@ -155,7 +168,12 @@ export default function NotificationPanel() {
               {items.map((notif) => (
                 <button
                   key={notif.id}
-                  onClick={() => !notif.read && markAsRead(notif.id)}
+                  onClick={() => {
+                    if (!notif.read) {
+                      markAsRead(notif.id);
+                    }
+                    openNotificationTarget(notif);
+                  }}
                   className={`w-full text-left px-4 py-3 hover:bg-paw-surface-high/50 transition-colors ${
                     !notif.read ? 'bg-paw-primary-fixed/30' : ''
                   }`}
