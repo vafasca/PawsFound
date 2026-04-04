@@ -1,4 +1,5 @@
 const CACHE_NAME = 'pawsfound-v1';
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -63,45 +64,4 @@ self.addEventListener('fetch', (event) => {
         });
       })
   );
-});
-
-// Handle push notifications
-self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Nueva alerta PawsFound';
-  const options = {
-    body: data.body || 'Se ha reportado una mascota cerca de tu ubicación',
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    vibrate: [100, 50, 100],
-    data: {
-      url: data.url || '/',
-      reportId: data.reportId || null,
-    },
-    actions: [
-      { action: 'view', title: 'Ver Reporte' },
-      { action: 'dismiss', title: 'Cerrar' },
-    ],
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-// Handle notification click
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  if (event.action === 'view' || !event.action) {
-    const reportId = event.notification.data?.reportId;
-    const baseUrl = event.notification.data?.url || '/';
-    const url = reportId ? `/?tab=home&reportId=${encodeURIComponent(reportId)}` : baseUrl;
-    event.waitUntil(
-      clients.matchAll({ type: 'window' }).then((windowClients) => {
-        for (const client of windowClients) {
-          if (client.url === url && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        return clients.openWindow(url);
-      })
-    );
-  }
 });

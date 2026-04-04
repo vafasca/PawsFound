@@ -16,7 +16,7 @@ import ChatDrawer from '@/components/pawsfound/ChatDrawer';
 import AdminDashboard from '@/components/pawsfound/AdminDashboard';
 import SettingsModals from '@/components/pawsfound/SettingsModals';
 import AddPetModal from '@/components/pawsfound/AddPetModal';
-import { useNotifications } from '@/hooks/use-notifications';
+import OneSignalBootstrap from '@/components/pawsfound/OneSignalBootstrap';
 
 function AppContent() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -28,9 +28,7 @@ function AppContent() {
   const showAdmin = useAppStore((s) => s.showAdmin);
   const showSettings = useAppStore((s) => s.showSettings);
   const showAddPet = useAppStore((s) => s.showAddPet);
-  const { isAuthenticated, user } = useAuth();
-  const notifications = useNotifications();
-  const { supported, permission, ensurePushSubscription } = notifications;
+  const { isAuthenticated } = useAuth();
 
   // Read initial tab from URL (for PWA shortcuts)
   useEffect(() => {
@@ -46,19 +44,6 @@ function AppContent() {
       setShowDetail(true);
     }
   }, [setActiveTab, setSelectedReport, setShowDetail]);
-
-  useEffect(() => {
-    if (!isAuthenticated || user?.pushEnabled === false) return;
-    if (!supported) return;
-    if (permission !== 'granted') return;
-    ensurePushSubscription();
-  }, [
-    isAuthenticated,
-    user?.pushEnabled,
-    supported,
-    permission,
-    ensurePushSubscription,
-  ]);
 
   const isMap = activeTab === 'map';
 
@@ -104,6 +89,7 @@ function AppContent() {
       </main>
 
       <BottomNavBar />
+      {isAuthenticated && <OneSignalBootstrap />}
       <PetDetailModal />
       <PwaInstallBanner />
 
