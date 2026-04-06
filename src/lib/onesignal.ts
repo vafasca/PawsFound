@@ -16,8 +16,10 @@ export async function sendOneSignalNotifications(items: OneSignalPayload[]): Pro
     return;
   }
 
-  const requests = items.map((item) =>
-    fetch(ONESIGNAL_API_URL, {
+  const requests = items.map((item, index) => {
+    const collapseKey = `${item.reportId || 'report'}-${Date.now()}-${index}`;
+
+    return fetch(ONESIGNAL_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,14 +32,17 @@ export async function sendOneSignalNotifications(items: OneSignalPayload[]): Pro
         headings: { es: item.title, en: item.title },
         contents: { es: item.body, en: item.body },
         url: item.url || '/',
+        // Avoid browser/providers collapsing multiple lost-pet alerts into a single push.
+        web_push_topic: collapseKey,
+        collapse_id: collapseKey,
         data: {
           reportId: item.reportId || null,
         },
       }),
     }).catch(() => {
       // Ignore OneSignal request failures to avoid blocking report creation.
-    })
-  );
+    });
+  });
 
   await Promise.allSettled(requests);
 }
