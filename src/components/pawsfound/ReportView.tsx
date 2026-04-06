@@ -50,6 +50,8 @@ export default function ReportView() {
   const reportStep = useAppStore((s) => s.reportStep);
   const setReportStep = useAppStore((s) => s.setReportStep);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const setSelectedReport = useAppStore((s) => s.setSelectedReport);
+  const setShowDetail = useAppStore((s) => s.setShowDetail);
   const setShowAuth = useAppStore((s) => s.setShowAuth);
   const { isAuthenticated, user } = useAuth();
 
@@ -71,6 +73,23 @@ export default function ReportView() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const resetReportDraft = () => {
+    setForm({
+      petName: '',
+      species: 'dog',
+      breed: '',
+      color: '',
+      uniqueMarks: '',
+      photoFile: null,
+      photoUrl: '',
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setReportStep(1);
+    setReportType('lost');
+  };
 
   // Capture location only once when entering report flow.
   useEffect(() => {
@@ -212,27 +231,23 @@ export default function ReportView() {
         duration: 5000,
       });
 
-      // Send local notification
-      if (notifications.canNotify) {
-        notifications.sendLocalNotification('Alerta publicada', {
-          body: `Tu reporte de ${normalizedPetName} está activo. Te avisaremos si hay avistamientos.`,
-          tag: 'report-published',
-        });
-      }
-
-      // Reset
-      setForm({
-        petName: '',
-        species: 'dog',
-        breed: '',
-        color: '',
-        uniqueMarks: '',
-        photoFile: null,
-        photoUrl: '',
-      });
-      setReportStep(1);
-      setReportType('lost');
+      // Always return to home and clean the report flow after a successful publish.
+      resetReportDraft();
+      setSelectedReport(null);
+      setShowDetail(false);
       setActiveTab('home');
+
+      // Non-critical local notification should not block navigation/reset flow.
+      if (notifications.canNotify) {
+        try {
+          notifications.sendLocalNotification('Alerta publicada', {
+            body: `Tu reporte de ${normalizedPetName} está activo. Te avisaremos si hay avistamientos.`,
+            tag: `report-published-${Date.now()}`,
+          });
+        } catch {
+          // ignore local notification failures
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error al publicar';
       toast.error(message);
